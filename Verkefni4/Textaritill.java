@@ -5,7 +5,7 @@ import java.awt.*;
 import net.miginfocom.swing.*;
 import java.awt.event.*;
 import javax.swing.event.*;
-public class Textaritill{
+public class Textaritill implements ActionListener{
     private JFrame frame = new JFrame("Textaritill");
     private JTextArea textArea = new JTextArea();
     private Path currentPath;
@@ -14,23 +14,37 @@ public class Textaritill{
         currentPath = Paths.get(path);
         currentFile = currentPath.toFile();
         String fileName = currentPath.getFileName().toString();
-        makeEditor(fileName);
+        System.out.println(currentFile.exists());
+        if(currentFile.exists()){
+            makeEditor(fileName);
+        }
+        else{
+            makeEditor("New File");
+            errorMessage("Could not find file");
+        }
         write();
     }
 
     public Textaritill(){
         makeEditor("New File");
         currentPath = Paths.get("");
-        currentFile = currentPath.toFile();
+        currentFile = null;
     }
-
+    private void errorMessage(String s){
+        JOptionPane.showMessageDialog(frame, s,
+        "Error",JOptionPane.ERROR_MESSAGE);
+    }
     private JMenuBar makeMenu(){
         JMenuBar menuBar = new JMenuBar();
-        JMenu menu = new JMenu("Tools");
-        JMenuItem open = makeOpen();
-        JMenuItem save = makeSave();
-        JMenuItem saveAs = makeSaveAs();
+        JMenu menu = new JMenu("Menu");
+        JMenuItem open = new JMenuItem("Open");
+        open.addActionListener(this);
+        JMenuItem save = new JMenuItem("Save");
+        save.addActionListener(this);
+        JMenuItem saveAs = new JMenuItem("Save As");
+        saveAs.addActionListener(this);
         JMenuItem newFile = new JMenuItem("New");
+        newFile.addActionListener(this);
         menu.add(save);
         menu.add(saveAs);
         menu.add(newFile);
@@ -39,7 +53,7 @@ public class Textaritill{
         return menuBar;
     }
 
-    private  void write(){
+    private void write(){
         String content;
         try{
             content = new String(Files.readAllBytes(this.currentPath),"UTF-8");
@@ -48,67 +62,19 @@ public class Textaritill{
             content = "";
         }
         this.textArea.setText(content);
-        frame.setTitle(currentFile.getName());
     }
 
-    private JMenuItem makeOpen(){
-        JMenuItem open = new JMenuItem("Open");
-        open.addActionListener(
-            new ActionListener(){
-                @Override
-                public void actionPerformed(ActionEvent e){
-                        JFileChooser chooser = new JFileChooser();
-                        if(currentFile.exists()) chooser.setCurrentDirectory(currentFile.getParentFile());
-                        int result = chooser.showOpenDialog(frame);
-                        if(result == JFileChooser.APPROVE_OPTION){
-                            File file = chooser.getSelectedFile();
-                            currentPath = Paths.get(file.getPath());
-                            currentFile = file;
-                            write();
-                        }
-                    }
-                }
-            );
-        return open;
-    }
-    private JMenuItem makeSave(){
-        JMenuItem save = new JMenuItem("Save");
-        save.addActionListener(
-            new ActionListener(){
-                @Override
-                public void actionPerformed(ActionEvent e){
-                    try{
-                    save();
-                    }
-                    catch(Exception exc){
-                    saveAs();
-                    }
-                }
-        });
-        return save;
-    }
     private void save() throws IOException{
         Files.write(currentPath, textArea.getText().getBytes("UTF-8"));
     }
-    private JMenuItem makeSaveAs(){
-        JMenuItem saveAs = new JMenuItem("Save as...");
-        saveAs.addActionListener(
-            new ActionListener(){
-                @Override
-                public void actionPerformed(ActionEvent e){
-                    saveAs();
-                }
-        });
-        return saveAs;
-    }
+
     private void newFile(){
         try{
             save();
         } catch(Exception e){
             saveAs();
         }
-        if(currentFile.exists())
-            currentPath = Paths.get(currentFile.getParentFile().getPath());
+        currentPath = Paths.get("");
         currentFile = null;
         textArea.setText("");
         frame.setTitle("New File");
@@ -123,14 +89,25 @@ public class Textaritill{
                 currentFile.createNewFile();
                 save();
             }
-            catch(Exception e){
-                //Do something?
+            catch(Exception exc){
+                errorMessage("Error while saving file");
             }
             frame.setTitle(currentFile.getName());
         }
     }
-
-    public void makeEditor(String title){
+    private void open(){
+        JFileChooser chooser = new JFileChooser();
+        if(currentFile != null && currentFile.exists()) chooser.setCurrentDirectory(currentFile.getParentFile());
+        int result = chooser.showOpenDialog(frame);
+        if(result == JFileChooser.APPROVE_OPTION){
+            File file = chooser.getSelectedFile();
+            currentPath = Paths.get(file.getPath());
+            currentFile = file;
+            frame.setTitle(currentFile.getName());
+            write();
+        }
+    }
+    private void makeEditor(String title){
         frame.setLayout(new MigLayout());
         frame.setTitle(title);
         JScrollPane scroller = new JScrollPane();
@@ -143,14 +120,27 @@ public class Textaritill{
         frame.pack();
         frame.setVisible(true);
     }
-
+    public void actionPerformed(ActionEvent e){
+        String actionName = ((JMenuItem)(e.getSource())).getText();
+        if(actionName.equals("Save")){
+            try{
+                save();
+            }
+            catch(Exception exc){
+                saveAs();
+            }
+        }
+        else if(actionName.equals("Save As")) saveAs();
+        else if(actionName.equals("Open")) open();
+        else if(actionName.equals("New")) newFile();
+    }
     public static void main(String[] args){
         Runnable evt = ()->{
         try{
-            Textaritill textaritill = new Textaritill(args[0]);
+            new Textaritill(args[0]);
         }
         catch(Exception e){
-            Textaritill textaritill = new Textaritill();
+            new Textaritill();
         }
         };
         EventQueue.invokeLater(evt);
