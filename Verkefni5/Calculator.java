@@ -11,9 +11,9 @@ public class Calculator implements ActionListener{
     private JLabel lastOpLabel = new JLabel(expression);
     private boolean shouldChange = true;
     public Calculator(){
-        makeGUI();
+        makeUI();
     }
-    private void makeGUI(){
+    private void makeUI(){
         MigLayout layout = new MigLayout("fill, wrap 4", "grow, 60:60:", 
         "[grow, 10:10:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
         frame.setLayout(layout);
