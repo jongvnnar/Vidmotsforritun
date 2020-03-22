@@ -35,7 +35,7 @@ public class Evaluate{
         }
     }
     public String getNumber(){
-        if(Math.abs(retValue-Math.round(retValue))< 2*Double.MIN_VALUE) 
+        if(Math.abs(retValue-Math.round(retValue)) < Double.MIN_VALUE) 
             return Long.toString(Math.round(retValue));
         else return Double.toString(retValue);
     }
