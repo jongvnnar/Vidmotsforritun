@@ -4,18 +4,28 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.event.*;
+import java.util.*;
+import java.util.regex.*;
 public class Calculator implements ActionListener{
     private String currentNum = "0";
     private String expression = "";
+    private SortedMap<String, String> history = new TreeMap<String, String>();
+    private SortedMap<String, String> memory = new TreeMap<String, String>();
     private JFrame frame = new JFrame("Calculator");
     private JPanel mainPanel = new JPanel();
     private JPanel calculatorPanel = new JPanel();
     private JPanel hisMemPanel = new JPanel();
-    private JPanel hisMemScroll = new JPanel();
+    private JPanel hisMemScroll = new JPanel(new MigLayout("fillx, wrap 1", "grow","20:20:"));
+    private JScrollPane scroller = new JScrollPane();
     private JLabel numLabel = new JLabel(currentNum);
     private JTextField expressionArea = new JTextField(expression);
     private boolean shouldChange = true;
     private boolean isHistory = true;
+    private JButton historyButton;
+    private JButton memoryButton;
+    private JTextField nameField = new JTextField();
+    private JTextField valueField = new JTextField();
+
     public Calculator(){
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setBackground(new Color(0,200,200));
@@ -33,10 +43,9 @@ public class Calculator implements ActionListener{
     private void standardCalculatorPanel(){
         calculatorPanel.removeAll();
         MigLayout layout = new MigLayout("fill, wrap 4", "grow, 60:60:", 
-        "[grow, 20:20:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
+        "[grow, 20:20:] [grow, 40::] [grow, 40::] [grow, 40::][grow, 40::][grow, 40::][grow, 40::][grow, 40::]");
         calculatorPanel.setLayout(layout);
         numLabel.setFont(numLabel.getFont().deriveFont(30.0f));
-
         JRadioButton standard = new JRadioButton("Standard");
         standard.setSelected(true);
         standard.addActionListener(this);
@@ -47,6 +56,8 @@ public class Calculator implements ActionListener{
         radioButtons.add(scientific);
         calculatorPanel.add(standard, "growx 0");
         calculatorPanel.add(scientific, "growx 0, span 3, gapleft 10");
+        JButton leftSvigi = makeButton("(");
+        JButton rightSvigi = makeButton(")");
         JButton clear = makeButton("Clear");
         JButton del = makeButton("⌫");
         JButton[] nums = new JButton[10];
@@ -61,27 +72,29 @@ public class Calculator implements ActionListener{
         JButton equals = makeButton("=");
 
         calculatorPanel.add(expressionArea, "span, grow");
-        expressionArea.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+        expressionArea.setHorizontalAlignment(JTextField.RIGHT);
         calculatorPanel.add(numLabel, "span, grow, gapright 10");
         numLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        calculatorPanel.add(clear, "grow, span 2");
+        calculatorPanel.add(leftSvigi, "grow");
+        calculatorPanel.add(rightSvigi, "grow");
+        calculatorPanel.add(clear, "grow");
         calculatorPanel.add(del, "grow");
-        calculatorPanel.add(divide,"grow");
         for(int i = 7; i<10; i++) calculatorPanel.add(nums[i],"grow");
-        calculatorPanel.add(multiply,"grow");
+        calculatorPanel.add(divide,"grow");
         for(int i = 4; i<7; i++) calculatorPanel.add(nums[i],"grow");
-        calculatorPanel.add(minus,"grow");
+        calculatorPanel.add(multiply,"grow");
         for(int i = 1; i<4; i++) calculatorPanel.add(nums[i],"grow");
-        calculatorPanel.add(add,"grow");
+        calculatorPanel.add(minus,"grow");
         calculatorPanel.add(dot,"grow");
         calculatorPanel.add(nums[0], "grow");
-        calculatorPanel.add(equals,"grow, span 2");
+        calculatorPanel.add(equals,"grow");
+        calculatorPanel.add(add,"grow");
         calculatorPanel.revalidate();
     }
     private void scientificCalculatorPanel(){
         calculatorPanel.removeAll();
-        MigLayout layout = new MigLayout("fill, wrap 6", "grow, 60:60:", 
-        "[grow, 20:20:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
+        MigLayout layout = new MigLayout("fill, wrap 6", "grow, 60::", 
+        "[grow, 20:20:] [grow, 40::] [grow, 40::] [grow, 40::][grow, 40::][grow, 40::][grow, 40::][grow, 40::]");
         calculatorPanel.setLayout(layout);
         numLabel.setFont(numLabel.getFont().deriveFont(30.0f));
 
@@ -120,7 +133,7 @@ public class Calculator implements ActionListener{
         JButton equals = makeButton("=");
 
         calculatorPanel.add(expressionArea, "span, grow");
-        expressionArea.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+        expressionArea.setHorizontalAlignment(JTextField.RIGHT);
         calculatorPanel.add(numLabel, "span, grow, gapright 10");
         numLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         calculatorPanel.add(powY, "grow");
@@ -151,28 +164,69 @@ public class Calculator implements ActionListener{
     }
     private void hisMemPanel(){
         hisMemPanel.removeAll();
-        MigLayout layout = new MigLayout("fill, wrap 2", "grow, 80::", 
-        "[grow, 30:30:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
+        MigLayout layout = new MigLayout("fill, wrap 2", "grow, 60::", 
+        "[grow, 30:30:] [grow, 60::] [grow, 60::] [grow, 60::][grow, 20::][grow, 15::][grow, 15::]");
         hisMemPanel.setLayout(layout);
-        JButton history = makeButton("History");
-        JButton memory = makeButton("Memory");
-        JScrollPane scroller = new JScrollPane();
+        historyButton = makeButton("History");
+        memoryButton = makeButton("Memory");
 
-        hisMemPanel.add(history, "grow");
-        hisMemPanel.add(memory, "grow");
+        hisMemPanel.add(historyButton, "grow");
+        hisMemPanel.add(memoryButton, "grow");
 
-        if(this.isHistory){
-            scroller.setViewportView(new JTextArea("history"));
-            history.setBackground(new Color(255,99,71));
-            history.setForeground(Color.BLACK);
+        scroller.setViewportView(new JTextArea("history"));
+        historyButton.setBackground(new Color(255,99,71));
+        hisMemPanel.add(scroller, "grow, span 2 6");
+        hisMemPanel.revalidate();
+    }
+
+    private void memory(){
+        if(!isHistory) return;
+        memoryButton.setBackground(new Color(255,99,71));
+        historyButton.setBackground(Color.WHITE);
+        MigLayout memoryLayout = new MigLayout("fill, wrap 2", "grow, 60::", 
+        "[grow, 30:30:] [grow, 60::] [grow, 40::] [grow, 60::][grow, 20::][grow, 20::][grow, 20::]");
+        hisMemPanel.setLayout(memoryLayout);
+        hisMemPanel.remove(scroller);
+        hisMemScroll.removeAll();
+        Iterator i = memory.keySet().iterator();
+        for(Map.Entry<String,String> entry: memory.entrySet()){
+            hisMemScroll.add(makeButton(entry.getKey() +"  " + entry.getValue()), "grow, span");
         }
-        else{
-            scroller.setViewportView(new JTextArea("memory"));
-            memory.setBackground(new Color(255,99,71));
-            memory.setForeground(Color.BLACK);
+        scroller.setViewportView(hisMemScroll);
+        hisMemPanel.add(scroller, "grow, span 2 4");
+        JLabel label = new JLabel("Vista nýtt númer:");
+        label.setVerticalAlignment(SwingConstants.BOTTOM);
+        label.setFont(label.getFont().deriveFont(17.0f));
+        hisMemPanel.add(label, "grow, span");
+        hisMemPanel.add(new Label("Nafn"), "grow");
+        hisMemPanel.add(new Label("Gildi"), "grow");
+        hisMemPanel.add(nameField, "grow");
+        hisMemPanel.add(valueField, "grow");
+        hisMemPanel.add(makeButton("Vista"), "grow, span");
+        hisMemScroll.revalidate();
+        hisMemPanel.revalidate(); 
+    }
 
+    private void saveToMemory(){
+        Pattern p = Pattern.compile("[A-Za-z]{1}[A-Za-z0-9]*");
+        String name = nameField.getText();
+        Matcher m = p.matcher(name);
+        if(!m.matches()){
+            errorMessage("Invalid name");
+            return;
         }
-        hisMemPanel.add(scroller, "grow, span 2 7");
+        String value = valueField.getText();
+        try{
+            Double.parseDouble(value);
+        }
+        catch(Exception e){
+            errorMessage("Invalid number");
+            return;
+        }
+        memory.put(name,value);
+        hisMemScroll.add(makeButton(name + " " + value), "grow, span");
+        nameField.setText("");
+        valueField.setText("");
         hisMemPanel.revalidate();
     }
     /**
@@ -182,13 +236,10 @@ public class Calculator implements ActionListener{
      */
     private JButton makeButton(String s){
         JButton retButton = new JButton(s);
-        try{
-            Integer.parseInt(s);
+        if(isNumber(s))
             retButton.setBackground(new Color(210,210,210));
-        }
-        catch(Exception e){
+        else
             retButton.setBackground(Color.WHITE);
-        }
         retButton.addActionListener(this);
         return retButton;
     }
@@ -322,19 +373,20 @@ public class Calculator implements ActionListener{
             frame.pack();
         }
         else if(actionName.equals("History")){
-            this.isHistory = true;
             hisMemPanel();
+            this.isHistory = true;
             mainPanel.repaint();
         }
         else if(actionName.equals("Memory")){
+            memory();
             this.isHistory = false;
-            hisMemPanel();
             mainPanel.repaint();
         }
         else if(actionName.equals("Clear")) clear();
         else if(actionName.equals(".")) addDot();
         else if(actionName.equals("=")) equals();
         else if(isNumber(actionName)) addNum(actionName);
+        else if(actionName.equals("Vista")) saveToMemory();
         else addOp(actionName);
         numLabel.setText(currentNum);
         if(!actionName.equals("="))
