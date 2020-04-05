@@ -1,74 +1,52 @@
-/**
- * Klasi sem birtir einfalda reiknivél.
- * Má keyra með því að gera eftirfarandi skipanir:
- * SET CLASSPATH=.;miglayout-core-5.3-20190920.220054-302.jar;miglayout-swing-5.3-20190918.220057-300.jar
- * javac -encoding utf8 Calculator.java
- * java Calculator
- * fyrir Windows OS.
- * 
- * Sé maður að nota LINUX skal keyra
- * CLASSPATH=.:miglayout-core-5.3-20190920.220054-302.jar:miglayout-swing-5.3-20190918.220057-300.jar
- * javac -encoding utf8 Calculator.java
- * java Calculator
- * 
- * Reiknivélin styður hvorki svigasetningu né RPN, heldur er nýjasta talan sem reiknuð er geymd og hægt
- * er að vinna með hana. Reiknisegðir eru metnar með klasanum Evaluate samkvæmt skilum þess klasa, frá 
- * vinstri til hægri án þess að miða við operator precedence. Reiknivélin styður margföldun, deilingu,
- * plús og mínus ásamt því að styðja eyðingu og 'backspace'.
- * 
- * Til að reikna segðir sem myndu annars krefjast svigasetningar, t.d. '(1+2)*3' má styðja á hnappa
- *  '1', '+', '2', '=', '*', '3','=' til að fá útkomuna 9. 
- * 
- * @author Jón Gunnar Hannesson
- * @author jgh12@hi.is
- */
+
 import net.miginfocom.swing.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.event.*;
 public class Calculator implements ActionListener{
-    /**
-     * currentNum er strengur sem heldur utan um svar síðustu gildu reiknisegðar.
-     * currentNum er grunnstillt sem "0".
-     * expression er strengur sem lýsir reiknisegðinni sem verið er að vinna í
-     * hverju sinni. Grunnstillt sem tómistrengurinn.
-     * frame er JFrame rammi sem inniheldur þá takka sem reiknivélin notar ásamt
-     * tveimur JLabel hlutum lýst neðar. Titlaður "Calculator".
-     * numLabel er JLabel merkjari sem inniheldur currentNum strenginn.
-     * lastOpLabel er JLabel merkjari sem inniheldur expression strenginn.
-     * shouldChange er boolean breyta sem lýsir því hvort ætti að skrifa yfir currentNum
-     * eða hvort ætti að bæta við aftan á currentNum strenginn. Hún er einnig notuð
-     * til að sjá hvort eigi að skrifa yfir expression strenginn eða bæta við hann. 
-     * Grunnstillt sem true.
-     */
     private String currentNum = "0";
     private String expression = "";
     private JFrame frame = new JFrame("Calculator");
+    private JPanel mainPanel = new JPanel();
+    private JPanel calculatorPanel = new JPanel();
+    private JPanel hisMemPanel = new JPanel();
+    private JPanel hisMemScroll = new JPanel();
     private JLabel numLabel = new JLabel(currentNum);
-    private JLabel lastOpLabel = new JLabel(expression);
+    private JTextField expressionArea = new JTextField(expression);
     private boolean shouldChange = true;
-    /**
-     * Smiður fyrir tilvik af Calculator.
-     * Eftir: Ný reiknivél birtist með breytur grunnstilltar eins og lýst var í 
-     * fastayrðingu gagna.
-     */
+    private boolean isHistory = true;
     public Calculator(){
-        makeUI();
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setBackground(new Color(0,200,200));
+        mainPanel.setLayout(new MigLayout("fill", "[grow] [] [grow]"));
+        standardCalculatorPanel();
+        mainPanel.add(calculatorPanel, "grow");
+        mainPanel.add(new JSeparator(1), "pushy, growy");
+        hisMemPanel();
+        mainPanel.add(hisMemPanel, "grow");
+        frame.add(mainPanel);
+        frame.pack();
+        frame.setVisible(true);
+
     }
-    /**
-     * Hjálparfall sem byggir reiknivélina innan frame og birtir hana. Reiknivélin er byggð upp sem grid þar sem 
-     * hver sella hefur minnstu stærð sem og preferred size 40x60, nema í fyrstu röð þar sem gildin eru 10x60.
-     * Í hverri röð eru fjórar sellur. Reiknivélin er skalanleg en þó er hægt að skrifa tölur og 
-     * segðir nógu langar til að fara út fyrir rammann. Hægt er að loka reiknivél
-     * með því að ýta á krossinn í efra vinstra horni.
-     */
-    private void makeUI(){
+    private void standardCalculatorPanel(){
+        calculatorPanel.removeAll();
         MigLayout layout = new MigLayout("fill, wrap 4", "grow, 60:60:", 
-        "[grow, 10:10:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
-        frame.setLayout(layout);
-        frame.setMinimumSize(new Dimension(240,250));
+        "[grow, 20:20:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
+        calculatorPanel.setLayout(layout);
         numLabel.setFont(numLabel.getFont().deriveFont(30.0f));
+
+        JRadioButton standard = new JRadioButton("Standard");
+        standard.setSelected(true);
+        standard.addActionListener(this);
+        JRadioButton scientific = new JRadioButton("Scientific");
+        scientific.addActionListener(this);
+        ButtonGroup radioButtons = new ButtonGroup();
+        radioButtons.add(standard);
+        radioButtons.add(scientific);
+        calculatorPanel.add(standard, "growx 0");
+        calculatorPanel.add(scientific, "growx 0, span 3, gapleft 10");
         JButton clear = makeButton("Clear");
         JButton del = makeButton("⌫");
         JButton[] nums = new JButton[10];
@@ -82,25 +60,120 @@ public class Calculator implements ActionListener{
         JButton dot = makeButton(".");
         JButton equals = makeButton("=");
 
-        frame.add(lastOpLabel, "span, grow, gapright 10");
-        lastOpLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        frame.add(numLabel, "span, grow, gapright 10");
+        calculatorPanel.add(expressionArea, "span, grow");
+        expressionArea.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+        calculatorPanel.add(numLabel, "span, grow, gapright 10");
         numLabel.setHorizontalAlignment(SwingConstants.RIGHT);
-        frame.add(clear, "grow, span 2");
-        frame.add(del, "grow");
-        frame.add(divide,"grow");
-        for(int i = 7; i<10; i++) frame.add(nums[i],"grow");
-        frame.add(multiply,"grow");
-        for(int i = 4; i<7; i++) frame.add(nums[i],"grow");
-        frame.add(minus,"grow");
-        for(int i = 1; i<4; i++) frame.add(nums[i],"grow");
-        frame.add(add,"grow");
-        frame.add(dot,"grow");
-        frame.add(nums[0], "grow");
-        frame.add(equals,"grow, span 2");
-        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.pack();
-        frame.setVisible(true);
+        calculatorPanel.add(clear, "grow, span 2");
+        calculatorPanel.add(del, "grow");
+        calculatorPanel.add(divide,"grow");
+        for(int i = 7; i<10; i++) calculatorPanel.add(nums[i],"grow");
+        calculatorPanel.add(multiply,"grow");
+        for(int i = 4; i<7; i++) calculatorPanel.add(nums[i],"grow");
+        calculatorPanel.add(minus,"grow");
+        for(int i = 1; i<4; i++) calculatorPanel.add(nums[i],"grow");
+        calculatorPanel.add(add,"grow");
+        calculatorPanel.add(dot,"grow");
+        calculatorPanel.add(nums[0], "grow");
+        calculatorPanel.add(equals,"grow, span 2");
+        calculatorPanel.revalidate();
+    }
+    private void scientificCalculatorPanel(){
+        calculatorPanel.removeAll();
+        MigLayout layout = new MigLayout("fill, wrap 6", "grow, 60:60:", 
+        "[grow, 20:20:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
+        calculatorPanel.setLayout(layout);
+        numLabel.setFont(numLabel.getFont().deriveFont(30.0f));
+
+        JRadioButton standard = new JRadioButton("Standard");
+        standard.addActionListener(this);
+        JRadioButton scientific = new JRadioButton("Scientific");
+        scientific.setSelected(true);
+        scientific.addActionListener(this);
+        calculatorPanel.add(standard, "growx 0");
+        calculatorPanel.add(scientific, "growx 0, span, gapleft 10");
+
+        JButton powY = makeButton("x^y");
+        JButton pow2 = makeButton("x^2");
+        JButton leftSvigi = makeButton("(");
+        JButton rightSvigi = makeButton(")");
+        JButton hrop = makeButton("n!");
+        JButton ln = makeButton("ln");
+        JButton mod = makeButton("mod");
+        JButton sqrt = makeButton("√x");
+        JButton tenPow = makeButton("10^");
+        JButton absolute = makeButton("|x|");
+        JButton e = makeButton("e");
+        JButton pi = makeButton("π");
+
+        JButton clear = makeButton("Clear");
+        JButton del = makeButton("⌫");
+        JButton[] nums = new JButton[10];
+        for(int i = 0; i<10; i++){
+            nums[i] = makeButton(Integer.toString(i));
+        }
+        JButton divide = makeButton("/");
+        JButton multiply = makeButton("*");
+        JButton add = makeButton("+");
+        JButton minus = makeButton("-");
+        JButton dot = makeButton(".");
+        JButton equals = makeButton("=");
+
+        calculatorPanel.add(expressionArea, "span, grow");
+        expressionArea.setComponentOrientation(ComponentOrientation.RIGHT_TO_LEFT);
+        calculatorPanel.add(numLabel, "span, grow, gapright 10");
+        numLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        calculatorPanel.add(powY, "grow");
+        calculatorPanel.add(pow2, "grow");
+        calculatorPanel.add(leftSvigi, "grow");
+        calculatorPanel.add(rightSvigi, "grow");
+        calculatorPanel.add(clear, "grow");
+        calculatorPanel.add(del, "grow");
+        calculatorPanel.add(hrop, "grow");
+        calculatorPanel.add(ln, "grow");
+        for(int i = 7; i<10; i++) calculatorPanel.add(nums[i],"grow");
+        calculatorPanel.add(divide,"grow");
+        calculatorPanel.add(mod, "grow");
+        calculatorPanel.add(sqrt, "grow");
+        for(int i = 4; i<7; i++) calculatorPanel.add(nums[i],"grow");
+        calculatorPanel.add(multiply,"grow");
+        calculatorPanel.add(tenPow, "grow");
+        calculatorPanel.add(absolute, "grow");
+        for(int i = 1; i<4; i++) calculatorPanel.add(nums[i],"grow");
+        calculatorPanel.add(minus,"grow");
+        calculatorPanel.add(e, "grow");
+        calculatorPanel.add(pi, "grow");
+        calculatorPanel.add(dot,"grow");
+        calculatorPanel.add(nums[0], "grow");
+        calculatorPanel.add(equals,"grow");
+        calculatorPanel.add(add,"grow");
+        calculatorPanel.revalidate();
+    }
+    private void hisMemPanel(){
+        hisMemPanel.removeAll();
+        MigLayout layout = new MigLayout("fill, wrap 2", "grow, 80::", 
+        "[grow, 30:30:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
+        hisMemPanel.setLayout(layout);
+        JButton history = makeButton("History");
+        JButton memory = makeButton("Memory");
+        JScrollPane scroller = new JScrollPane();
+
+        hisMemPanel.add(history, "grow");
+        hisMemPanel.add(memory, "grow");
+
+        if(this.isHistory){
+            scroller.setViewportView(new JTextArea("history"));
+            history.setBackground(new Color(255,99,71));
+            history.setForeground(Color.BLACK);
+        }
+        else{
+            scroller.setViewportView(new JTextArea("memory"));
+            memory.setBackground(new Color(255,99,71));
+            memory.setForeground(Color.BLACK);
+
+        }
+        hisMemPanel.add(scroller, "grow, span 2 7");
+        hisMemPanel.revalidate();
     }
     /**
      * Hjálparfall sem skilar JButton takka með actionListener sem bendir á Calculator hlutinn sjálfan.
@@ -109,9 +182,17 @@ public class Calculator implements ActionListener{
      */
     private JButton makeButton(String s){
         JButton retButton = new JButton(s);
+        try{
+            Integer.parseInt(s);
+            retButton.setBackground(new Color(210,210,210));
+        }
+        catch(Exception e){
+            retButton.setBackground(Color.WHITE);
+        }
         retButton.addActionListener(this);
         return retButton;
     }
+
     /**
      * Hjálparfall sem gerir manni kleift að eyða aftasta gildi currentNum.
      * Fyrir: currentNum er strengur af lengd >= 1.
@@ -175,7 +256,7 @@ public class Calculator implements ActionListener{
      * Hjálparfall sem styður við equals takkann.
      * Fyrir: expression strengur sem lýsir gildri eða ógildri reiknisegð. currentNum
      *  er strengur sem lýsir síðustu tölu sem sett var inn í reiknivélina.
-     * Eftir: lastOpLabel sýnir gamla expression strenginn að viðbættu jafnaðarmerki.
+     * Eftir: expressionArea sýnir gamla expression strenginn að viðbættu jafnaðarmerki.
      *  expression er nú tómistrengurinn. Hafi expression lýst gildri reiknisegð hefur currentNum
      *  verið breytt í svarið við þeirri reiknisegð. Annars er currentNum hið sama og áður og kallað
      *  hefur verið á errorMessage fall með strengnum "Invalid expression". shouldChange er nú stillt
@@ -184,7 +265,7 @@ public class Calculator implements ActionListener{
     private void equals(){
         shouldChange = true;
         String evalExpression = expression.concat(currentNum + " " + "=");
-        lastOpLabel.setText(evalExpression);
+        expressionArea.setText(evalExpression);
         Evaluate eval = new Evaluate(evalExpression);
         try{
         currentNum = eval.getNumber();
@@ -218,11 +299,38 @@ public class Calculator implements ActionListener{
     }
     /**
      * Framkvæmir aðgerðirnar lýst að ofan þegar ýtt er á samsvarandi takka.
-     * Uppfærir numLabel og uppfærir lastOpLabel ef ekki var ýtt á jafnaðarmerki.
+     * Uppfærir numLabel og uppfærir expressionArea ef ekki var ýtt á jafnaðarmerki.
      */
     public void actionPerformed(ActionEvent e){
-        String actionName = ((JButton)(e.getSource())).getText();
+        String actionName;
+        try{
+            actionName = ((JButton)(e.getSource())).getText();
+        }
+        catch(Exception exc){
+            actionName = ((JRadioButton)(e.getSource())).getText();
+        }
+        System.out.println(actionName);
         if(actionName.equals("⌫")) backspace();
+        else if(actionName.equals("Standard")){
+            standardCalculatorPanel();
+            mainPanel.repaint();
+            frame.pack();
+        }
+        else if(actionName.equals("Scientific")){
+            scientificCalculatorPanel();
+            mainPanel.repaint();
+            frame.pack();
+        }
+        else if(actionName.equals("History")){
+            this.isHistory = true;
+            hisMemPanel();
+            mainPanel.repaint();
+        }
+        else if(actionName.equals("Memory")){
+            this.isHistory = false;
+            hisMemPanel();
+            mainPanel.repaint();
+        }
         else if(actionName.equals("Clear")) clear();
         else if(actionName.equals(".")) addDot();
         else if(actionName.equals("=")) equals();
@@ -230,7 +338,7 @@ public class Calculator implements ActionListener{
         else addOp(actionName);
         numLabel.setText(currentNum);
         if(!actionName.equals("="))
-            lastOpLabel.setText(expression);
+            expressionArea.setText(expression);
     }
     public static void main(String[] args){
         Runnable evt = ()->{
