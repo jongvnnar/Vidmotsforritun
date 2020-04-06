@@ -1,4 +1,3 @@
-
 import net.miginfocom.swing.*;
 import javax.swing.*;
 import java.awt.*;
@@ -9,8 +8,8 @@ import java.util.regex.*;
 public class Calculator implements ActionListener{
     private String currentNum = "0";
     private String expression = "";
-    private SortedMap<String, String> history = new TreeMap<String, String>();
-    private SortedMap<String, String> memory = new TreeMap<String, String>();
+    private LinkedHashMap<String, String> history = new LinkedHashMap<String, String>();
+    private LinkedHashMap<String, String> memory = new LinkedHashMap<String, String>();
     private JFrame frame = new JFrame("Calculator");
     private JPanel mainPanel = new JPanel();
     private JPanel calculatorPanel = new JPanel();
@@ -38,7 +37,34 @@ public class Calculator implements ActionListener{
         frame.add(mainPanel);
         frame.pack();
         frame.setVisible(true);
-
+        setupExpressionArea();
+    }
+    private void setupExpressionArea(){
+        InputMap iM = expressionArea.getInputMap();
+        ActionMap aM = expressionArea.getActionMap();
+        iM.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,0), "enter");
+        iM.put(KeyStroke.getKeyStroke(KeyEvent.VK_UP,0), "up");
+        iM.put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN,0), "down");
+        expressionArea.addActionListener(this);
+        aM.put("enter", new AbstractAction(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                eq();
+                numLabel.setText(currentNum);
+            }
+        });
+        aM.put("down", new AbstractAction(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                System.out.println("Down pressed");
+            }
+        });
+        aM.put("up", new AbstractAction(){
+            @Override
+            public void actionPerformed(ActionEvent e){
+                System.out.println("Up pressed");
+            }
+        });
     }
     private void standardCalculatorPanel(){
         calculatorPanel.removeAll();
@@ -164,6 +190,8 @@ public class Calculator implements ActionListener{
     }
     private void hisMemPanel(){
         hisMemPanel.removeAll();
+        hisMemScroll.removeAll();
+
         MigLayout layout = new MigLayout("fill, wrap 2", "grow, 60::", 
         "[grow, 30:30:] [grow, 60::] [grow, 60::] [grow, 60::][grow, 20::][grow, 15::][grow, 15::]");
         hisMemPanel.setLayout(layout);
@@ -173,7 +201,11 @@ public class Calculator implements ActionListener{
         hisMemPanel.add(historyButton, "grow");
         hisMemPanel.add(memoryButton, "grow");
 
-        scroller.setViewportView(new JTextArea("history"));
+        for(Map.Entry<String,String> entry: history.entrySet()){
+            hisMemScroll.add(makeButton(entry.getKey() +"  " + entry.getValue()), "grow, span");
+        }
+
+        scroller.setViewportView(hisMemScroll);
         historyButton.setBackground(new Color(255,99,71));
         hisMemPanel.add(scroller, "grow, span 2 6");
         hisMemPanel.revalidate();
@@ -190,7 +222,7 @@ public class Calculator implements ActionListener{
         hisMemScroll.removeAll();
         Iterator i = memory.keySet().iterator();
         for(Map.Entry<String,String> entry: memory.entrySet()){
-            hisMemScroll.add(makeButton(entry.getKey() +"  " + entry.getValue()), "grow, span");
+            hisMemScroll.add(makeButton(entry.getKey() +":  " + entry.getValue()), "grow, span");
         }
         scroller.setViewportView(hisMemScroll);
         hisMemPanel.add(scroller, "grow, span 2 4");
@@ -224,7 +256,7 @@ public class Calculator implements ActionListener{
             return;
         }
         memory.put(name,value);
-        hisMemScroll.add(makeButton(name + " " + value), "grow, span");
+        hisMemScroll.add(makeButton(name + ": " + value), "grow, span");
         nameField.setText("");
         valueField.setText("");
         hisMemPanel.revalidate();
@@ -251,8 +283,8 @@ public class Calculator implements ActionListener{
      * strengur án aftasta characters.
      */
     private void backspace(){
-        if(currentNum.length() > 1){
-            currentNum = currentNum.substring(0, currentNum.length()-1);
+        if(expression.length() > 0){
+            expression = expression.substring(0, expression.length()-1);
         }
     }
     /**
@@ -273,7 +305,7 @@ public class Calculator implements ActionListener{
      * er nú stillt sem true.
      */
     private void addOp(String s){
-        expression = expression.concat(currentNum + " " + s + " ");
+        expression = expression.concat(" "+ s +" ");
         shouldChange = true;
     }
     /**
@@ -297,6 +329,7 @@ public class Calculator implements ActionListener{
      *  shouldChange er nú stillt sem false.
      */
     private void addNum(String num){
+        expression = expression.concat(num);
         if(shouldChange){
             currentNum = num;
         }
@@ -313,17 +346,24 @@ public class Calculator implements ActionListener{
      *  hefur verið á errorMessage fall með strengnum "Invalid expression". shouldChange er nú stillt
      *  sem true
      */
-    private void equals(){
+    private void eq(){
         shouldChange = true;
-        String evalExpression = expression.concat(currentNum + " " + "=");
+        expression = expressionArea.getText();
+        String evalExpression = "";
+        if(!expression.contains("=")) evalExpression = expression.concat(" = ");
+        else{
+            evalExpression = expression;
+            expression = expression.substring(0,expression.indexOf("="));
+        } 
         expressionArea.setText(evalExpression);
-        Evaluate eval = new Evaluate(evalExpression);
-        try{
+        Evaluate eval = new Evaluate(expression, memory);
         currentNum = eval.getNumber();
-        }
-        catch(Exception e){
+        if(currentNum.equals("NaN")){
             errorMessage("Invalid Expression");
+            return;
         }
+        history.put(evalExpression, currentNum);
+        hisMemPanel();
         expression = "";
     }
     /**
@@ -333,6 +373,35 @@ public class Calculator implements ActionListener{
     private void errorMessage(String s){
         JOptionPane.showMessageDialog(frame, s,
         "Error",JOptionPane.ERROR_MESSAGE);
+    }
+
+    private void hrop(){
+        expression = expression.concat("!");
+    }
+    private void addFunc(String s){
+        expression = expression.concat(s + "(");
+    }
+    private void addPow(String s){
+        if(s.contains("x")&&s.contains("y")){
+            expression = expression.concat(currentNum + s.substring(1,s.length()-1));
+        }
+        else if(s.contains("x")) expression = expression.concat(currentNum + s.substring(1,s.length()));
+        else expression = expression.concat("10^");
+    }
+    private void rightApostrophe(){
+        expression = expression.concat(")");
+        shouldChange = true;
+    }
+    private void historyPressed(String expression){
+        expressionArea.setText(expression.substring(0, expression.indexOf("=")));
+        currentNum = expression.substring(expression.indexOf("=")+1, expression.length());
+        shouldChange = true;
+        expression = "";
+    }
+    private void addConstant(String constant){
+        expression = expression.concat(constant);
+        currentNum = constant;
+        shouldChange = false;
     }
     /**
      * Hjálparfall við að meta hvort strengur lýsi heiltölu eða ekki.
@@ -383,13 +452,23 @@ public class Calculator implements ActionListener{
             mainPanel.repaint();
         }
         else if(actionName.equals("Clear")) clear();
+        else if(actionName.contains("^")) addPow(actionName);
+        else if(actionName.equals("n!")) hrop();
+        else if(actionName.equals("(")) addFunc("");
+        else if(actionName.equals(")")) rightApostrophe();
         else if(actionName.equals(".")) addDot();
-        else if(actionName.equals("=")) equals();
+        else if(actionName.equals("=")) eq();
+        else if(actionName.contains(" = ")) historyPressed(actionName);
+        else if(actionName.equals("√x")) addFunc("sqrt");
+        else if(actionName.equals("ln")) addFunc("ln");
+        else if(actionName.equals("|x|")) addFunc("abs");
         else if(isNumber(actionName)) addNum(actionName);
         else if(actionName.equals("Vista")) saveToMemory();
+        else if(actionName.contains(":")) addConstant(actionName.substring(0,actionName.indexOf(":")-1));
+        else if(actionName.equals("e")||actionName.equals("π")) addConstant(actionName);
         else addOp(actionName);
         numLabel.setText(currentNum);
-        if(!actionName.equals("="))
+        if(!actionName.contains("="))
             expressionArea.setText(expression);
     }
     public static void main(String[] args){
