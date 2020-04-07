@@ -1,3 +1,38 @@
+/**
+ * Klasi sem birtir reiknivél.
+ * Má keyra með því að gera eftirfarandi skipanir:
+ * SET CLASSPATH=.;miglayout-core-5.3-20190920.220054-302.jar;miglayout-swing-5.3-20190918.220057-300.jar;MathParser.org-mXparser-v.4.4.0-jdk11.jar
+ * javac -encoding utf8 Calculator.java
+ * java Calculator
+ * fyrir Windows OS.
+ * 
+ * Sé maður að nota LINUX skal keyra
+ * CLASSPATH=.:miglayout-core-5.3-20190920.220054-302.jar:miglayout-swing-5.3-20190918.220057-300.jar:MathParser.org-mXparser-v.4.4.0-jdk11.jar
+ * javac -encoding utf8 Calculator.java
+ * java Calculator
+ * 
+ * Reiknivélin styður svigasetningu sem og margföldun, deilingu, samlagningu, frádrátt, veldisreikning og leifareikning.
+ * Ásamt því er stuðningur við náttúrulega logrann, algildi og kvaðratrót. 
+ * Reiknivélin inniheldur takkaviðmót sem styður alla reikninga að ofan þar sem að hægt er að skipta á milli "standard"
+ * reiknivélar með viðmóti sem styður sviga, margföldun, deilingu, frádrátt og samlagningu og "Scientific"
+ * reiknivélar sem inniheldur sömu virkni og "standard" að viðbættum stuðningi við virkjana nefnda að ofan.
+ * "Scientific" reiknivélin býður einnig upp á að nota fastana e og pí.
+ * 
+ * Reiknivélin metur segðir eins og lýst er í skjölun Evaluate klasa.
+ * 
+ * Einnig geymir reiknivélin fyrri reiknisegðir undir "History" flipa, sem hægt er að ýta á til að vinna
+ * aftur með í reiknivélinni. Ásamt þessu er "Memory" flipi þar sem hægt er að vista fasta á meðan reiknivél er
+ * virk og nota þá í reiknisegðum.
+ * 
+ * Reiknivélin styður einnig að rita inn reiknisegðir með lyklaborði í reiknisegðarglugga. Þar er hægt að beyta
+ * örvatökkunum upp og niður til að fletta í gegnum fyrri reiknisegðir og jafngildir enter takkinn því að
+ * ýta á jafnaðarmerki með takkaviðmóti til að fá svar við reiknisegð.
+ * 
+ * Sé reiknisegð ekki gild birtir reiknivélin villuboð og skilar NaN(Not a Number) 
+ * 
+ * @author Jón Gunnar Hannesson
+ * @author jgh12@hi.is
+ */
 import net.miginfocom.swing.*;
 import javax.swing.*;
 import java.awt.*;
@@ -6,6 +41,35 @@ import javax.swing.event.*;
 import java.util.*;
 import java.util.regex.*;
 public class Calculator implements ActionListener{
+    /**
+     * currentNum er strengur sem heldur utan um svar síðustu gildu reiknisegðar.
+     * currentNum er grunnstillt sem "0".
+     * expression er strengur sem lýsir reiknisegðinni sem verið er að vinna í
+     * hverju sinni. Grunnstillt sem tómistrengurinn.
+     * history er LinkedList fyrir strengi grunnstilltur með engu innihaldi. Notaður til að geyma
+     * eldri reiknisegðir.
+     * memory er LinkedHashMap fyrir strengi til að geyma fasta. Þar er nafn fastans key og gildi hans value.
+     * Grunnstillt sem tómt LinkedHashMap.
+     * frame er JFrame rammi sem inniheldur mainPanel og þar með allt viðmót, titlaður "Calculator".
+     * mainPanel er JPanel sem á að innihalda alla viðmótshluti reiknivélar.
+     * calculatorPanel er JPanel sem inniheldur viðmót fyrir reikniaðgerðir, reiknisegðarglugga o.s.frv.
+     * expressionArea er JTextField sem inniheldur expression.
+     * hisMemPanel er JPanel sem inniheldur history og memory flipa lýst að ofan.
+     * hisMemScrollPanel er JPanel sem inniheldur takka sem lýsa innihaldi history og memory.
+     * scroller er JScroller sem inniheldur hisMemScrollPanel.
+     * shouldChange er boolean breyta sem lýsir því hvort ætti að skrifa yfir currentNum
+     * eða hvort ætti að bæta við aftan á currentNum strenginn. Hún er einnig notuð
+     * til að sjá hvort eigi að skrifa yfir expression strenginn eða bæta við hann. 
+     * Grunnstillt sem true.
+     * isHistory er boolean breyta sem segir til um hvort verið sé að birta history eða memory flipa
+     * historyButton er JButton sem birtir innihald history í hisMemScrollPanel.
+     * Gerir ekkert ef isHistory er stillt sem true.
+     * memoryButton er takki sem birtir innihald memory í hisMemScrollPanel ásamt viðmóti til að vista
+     * nýja fasta. Gerir ekkert ef isHistory er stillt sem false.
+     * nameField er JTextField sem notað er til að rita inn nafn á fasta sem á að vista.
+     * valueField er JTextField sem notað er til að rita inn gildi á nýjum fasta sem á að vista.
+     * i er heiltölubreyta sem notuð er til að fletta í gegnum history með örvatökkum í expressionArea.
+     */
     private String currentNum = "0";
     private String expression = "";
     private LinkedList<String> history = new LinkedList<String>();
@@ -14,7 +78,7 @@ public class Calculator implements ActionListener{
     private JPanel mainPanel = new JPanel();
     private JPanel calculatorPanel = new JPanel();
     private JPanel hisMemPanel = new JPanel();
-    private JPanel hisMemScrollPane = new JPanel(new MigLayout("fillx, wrap 1", "grow","20:20:"));
+    private JPanel hisMemScrollPanel = new JPanel(new MigLayout("fillx, wrap 1", "grow","20:20:"));
     private JScrollPane scroller = new JScrollPane();
     private JLabel numLabel = new JLabel(currentNum);
     private JTextField expressionArea = new JTextField(expression);
@@ -25,7 +89,12 @@ public class Calculator implements ActionListener{
     private JTextField nameField = new JTextField();
     private JTextField valueField = new JTextField();
     private int i = -1;
-
+    /**
+     * Smiður fyrir tilvik af Calculator. 
+     * Notkun: Calculator calc = new Calculator() eða einfaldlega new Calculator()
+     * Eftir: Reiknivél birt eins og lýst var í fastayrðingu gagna með skiptingu á milli hisMemPanel og calculatorPanel.
+     * 
+     */
     public Calculator(){
         ImageIcon icon = new ImageIcon("./lightningIcon.png");
         frame.setIconImage(icon.getImage());
@@ -42,6 +111,15 @@ public class Calculator implements ActionListener{
         frame.setVisible(true);
         setupTextFields();
     }
+    /**
+     * Hjálparfall við uppsetningu textField tilviksbreytna notaður í smið.
+     * Fyrir: tilviksbreytur af tagi textField eru grunnstilltar eins og lýst er að ofan.
+     * Eftir: expressionArea hefur hlustara sem kalla á equals() hjálparfall ef ýtt er á enter, upPressed() ef
+     *   ýtt er á upp örvartakkann og downPressed() ef ýtt er á niður örvatakkan.
+     *   valueField hefur hlustara sem kallar á saveToMemory() fallið ef ýtt er á enter.
+     *   nameField hefur nú ToolTip texta sem útskýrir hvers lags skilyrði nöfn á föstum þurfa að uppfylla, þ.e.
+     *   að fastanöfn megi innihalda bókstafi og tölustafi en verði að byrja á bókstaf.
+     */
     private void setupTextFields(){
         InputMap iM = expressionArea.getInputMap();
         ActionMap aM = expressionArea.getActionMap();
@@ -82,10 +160,19 @@ public class Calculator implements ActionListener{
             }
         });
     }
+    /**
+     * Hjálparfall sem byggir "Standard" reiknivélina innan frame og birtir hana. Reiknivélin er byggð upp sem grid þar 
+     * sem hver sella hefur minnstu stærð sem og preferred size 40x60, nema í fyrstu röð þar sem gildin eru 20x60.
+     * Í hverri röð eru fjórar sellur. Reiknivélin er skalanleg en þó er hægt að skrifa tölur og 
+     * segðir nógu langar til að fara út fyrir rammann. Hægt er að loka reiknivél
+     * með því að ýta á krossinn í efra vinstra horni.
+     * Tveir JRadioButton eru efst, Scientific og Standard notaðir til að skipta á milli viðmóta.
+     * Scientific radio button er settur sem Selected.
+     */
     private void standardCalculatorPanel(){
         calculatorPanel.removeAll();
         MigLayout layout = new MigLayout("fill, wrap 4", "grow, 60:60:", 
-        "[grow, 20:20:] [grow, 40::] [grow, 40::] [grow, 40::][grow, 40::][grow, 40::][grow, 40::][grow, 40::]");
+        "[grow, 20:20:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
         calculatorPanel.setLayout(layout);
         numLabel.setFont(numLabel.getFont().deriveFont(30.0f));
         JRadioButton standard = new JRadioButton("Standard");
@@ -133,10 +220,20 @@ public class Calculator implements ActionListener{
         calculatorPanel.add(add,"grow");
         calculatorPanel.revalidate();
     }
+    /**
+     * Hjálparfall sem byggir "Scientific" reiknivélina innan frame og birtir hana. Reiknivélin er byggð upp sem grid þar 
+     * sem hver sella hefur minnstu stærð sem og preferred size 40x60, nema í fyrstu röð þar sem gildin eru 20x60.
+     * Í hverri röð eru fjórar sellur. Reiknivélin er skalanleg en þó er hægt að skrifa tölur og 
+     * segðir nógu langar til að fara út fyrir rammann. Hægt er að loka reiknivél
+     * með því að ýta á krossinn í efra vinstra horni.
+     * Tveir JRadioButton eru efst, Scientific og Standard notaðir til að skipta á milli viðmóta.
+     * Scientific radio button er settur sem Selected.
+     */
+
     private void scientificCalculatorPanel(){
         calculatorPanel.removeAll();
-        MigLayout layout = new MigLayout("fill, wrap 6", "grow, 60::", 
-        "[grow, 20:20:] [grow, 40::] [grow, 40::] [grow, 40::][grow, 40::][grow, 40::][grow, 40::][grow, 40::]");
+        MigLayout layout = new MigLayout("fill, wrap 6", "grow, 60:60:", 
+        "[grow, 20:20:] [grow, 40:40:] [grow, 40:40:] [grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:][grow, 40:40:]");
         calculatorPanel.setLayout(layout);
         numLabel.setFont(numLabel.getFont().deriveFont(30.0f));
 
@@ -204,9 +301,15 @@ public class Calculator implements ActionListener{
         calculatorPanel.add(add,"grow");
         calculatorPanel.revalidate();
     }
+    /**
+     * Hjálparfall sem byggir hægri hlið reiknivélar, þ.e. hisMemPanel.
+     * Eftir inniheldur hisMemPanel historyButton og memoryButton ásamt hisMemScrollPanel og scroller.
+     * innan hisMemScroller eru birtir takkar sem lýsa innihaldi history Deque tilviksbreytunnar.
+     * isHistory er sett sem true.
+     */
     private void hisMemPanel(){
         hisMemPanel.removeAll();
-        hisMemScrollPane.removeAll();
+        hisMemScrollPanel.removeAll();
         this.isHistory = true;
         MigLayout hisMemLayout = new MigLayout("fill, wrap 2", "grow, 60::", 
         "[grow, 30:30:] [grow, 60::] [grow, 40::] [grow, 60::][grow, 20::][grow, 20::][grow, 20::]");
@@ -218,38 +321,51 @@ public class Calculator implements ActionListener{
         hisMemPanel.add(memoryButton, "grow");
         ListIterator i = history.listIterator();
         while(i.hasNext()){
-            hisMemScrollPane.add(makeButton((String)i.next()), "grow, span");
+            hisMemScrollPanel.add(makeButton((String)i.next()), "grow, span");
         }
-        scroller.setViewportView(hisMemScrollPane);
+        scroller.setViewportView(hisMemScrollPanel);
         historyButton.setBackground(new Color(255,99,71));
         hisMemPanel.add(scroller, "grow, span 2 6");
         hisMemPanel.revalidate();
     }
+    /**
+     * Fall sem hækkar gildi á i ef i < history.size()-1 og histoyy er ekki tómt og setur expression sem 
+     * reiknisegðina sem það stak lýsir og currentNum sem svarið við þeirri reiknisegð.
+     */
     private void upPressed(){
-        if(i == history.size()-1) return;
+        if(i == history.size()-1|| history.isEmpty()) return;
         i++;
         String full = history.get(i);
         expression = full.substring(0,full.indexOf("=") + 1);
         currentNum = full.substring(full.indexOf("=") + 1, full.length());
     }
+    /**
+     * Fall sem lækkar gildi á i ef i > 0 og setur expression sem 
+     * reiknisegðina sem það stak lýsir og currentNum sem svarið við þeirri reiknisegð.
+     */
     private void downPressed(){
-        if(i == 0) return;
+        if(i <= 0) return;
         i--;
         String full = history.get(i);
         expression = full.substring(0,full.indexOf("=") + 1);
         currentNum = full.substring(full.indexOf("=") + 1, full.length());
     }
+    /**
+     * Hjálparfall sem fyrir memoryButton(). Birtir stök innan memory tilviksbreytunnar sem takka innan
+     * hisMemScrollPanel ásamt því að birta nameField, textField og save takka og þrenn JLabel til að útskýra
+     * virkni nameField, textField og save takkans.
+     */
     private void memory(){
         if(!isHistory) return;
         isHistory = false;
         memoryButton.setBackground(new Color(255,99,71));
         historyButton.setBackground(Color.WHITE);
         hisMemPanel.remove(scroller);
-        hisMemScrollPane.removeAll();
+        hisMemScrollPanel.removeAll();
         for(Map.Entry<String,String> entry: memory.entrySet()){
-            hisMemScrollPane.add(makeButton(entry.getKey() +":  " + entry.getValue()), "grow, span");
+            hisMemScrollPanel.add(makeButton(entry.getKey() +":  " + entry.getValue()), "grow, span");
         }
-        scroller.setViewportView(hisMemScrollPane);
+        scroller.setViewportView(hisMemScrollPanel);
         hisMemPanel.add(scroller, "grow, span 2 4");
         JLabel label = new JLabel("Save new number:");
         label.setVerticalAlignment(SwingConstants.BOTTOM);
@@ -260,10 +376,15 @@ public class Calculator implements ActionListener{
         hisMemPanel.add(nameField, "grow");
         hisMemPanel.add(valueField, "grow");
         hisMemPanel.add(makeButton("Save"), "grow, span");
-        hisMemScrollPane.revalidate();
+        hisMemScrollPanel.revalidate();
         hisMemPanel.revalidate(); 
     }
-
+    /**
+     * Hjálparfall sem tekur innihald nameField og valueField, uppfylli þeir strengir þær kröfur að innihald nameField
+     * byrji á bókstaf og innihaldi aðeins bókstafi og tölustafi og að innihald valueField lýsi tölu þá er þessu bætt
+     * við memory með innihald nameField sem key og innihald valueField sem value. Birtir einnig takka fyrir þetta gildi
+     * innan history flipans.
+     */
     private void saveToMemory(){
         Pattern p = Pattern.compile("[A-Za-z]{1}[A-Za-z0-9]*");
         String name = nameField.getText();
@@ -281,14 +402,15 @@ public class Calculator implements ActionListener{
             return;
         }
         memory.put(name,value);
-        hisMemScrollPane.add(makeButton(name + ": " + value), "grow, span");
+        hisMemScrollPanel.add(makeButton(name + ": " + value), "grow, span");
         nameField.setText("");
         valueField.setText("");
-        hisMemScrollPane.revalidate();
+        hisMemScrollPanel.revalidate();
         hisMemPanel.revalidate();
     }
     /**
      * Hjálparfall sem skilar JButton takka með actionListener sem bendir á Calculator hlutinn sjálfan.
+     * Takkinn er hvítur almennt en grár ef innihald hans er tala.
      * @param s er strengur sem lýsir titlinum á takkanum
      * @return JButton með actionListener sem bendir á hlutinn sjálfan með titil s.
      */
@@ -347,11 +469,11 @@ public class Calculator implements ActionListener{
     /**
      * Hjálparfall við að bæta heiltölum við currentNum.
      * @param num strengur sem lýsir heiltölu.
-     * Fyrir: currentNum er strengur sem lýsir heiltölu. shouldChange er annaðhvort true
+     * Fyrir: currentNum er strengur sem lýsir heiltölu. expression er strengur. shouldChange er annaðhvort true
      *  eða false.
      * Eftir: Ef shouldChange var true er currentNum nú heiltalan sem bætt var við.
      *  Ef shouldChange var false er currentNum nú sami strengur að viðbættri með num strenginn
-     *  skeyttan aftan við.
+     *  skeyttan aftan við. num hefur verið bætt aftan við expression.
      *  shouldChange er nú stillt sem false.
      */
     private void addNum(String num){
@@ -370,7 +492,7 @@ public class Calculator implements ActionListener{
      *  expression er nú tómistrengurinn. Hafi expression lýst gildri reiknisegð hefur currentNum
      *  verið breytt í svarið við þeirri reiknisegð. Annars er currentNum hið sama og áður og kallað
      *  hefur verið á errorMessage fall með strengnum "Invalid expression". shouldChange er nú stillt
-     *  sem true
+     *  sem true. Reiknisegðarstrengur að viðskeyttu svari hefur bæst við history og birtur í history flipa.
      */
     private void eq(){
         shouldChange = true;
@@ -400,15 +522,28 @@ public class Calculator implements ActionListener{
         JOptionPane.showMessageDialog(frame, s,
         "Error",JOptionPane.ERROR_MESSAGE);
     }
-
+    /**
+     * Hjálparfall sem bætir upphrópunarmerki aftan við expression og setur shouldChange sem true.
+     */
     private void hrop(){
         expression = expression.concat("!");
         shouldChange = true;
     }
+    /**
+     * Hjálparfall við takkana fyrir föllin tölugildi, kvaðratrót og ln bætir við expression.
+     * @param s er strengur sem lýsir því hvaða fall á að bæta í expression.
+     * Eftir: Við expression hefur bæst strengurinn s ásamt vinstri sviga. shouldChange er nú true.
+     */
     private void addFunc(String s){
         expression = expression.concat(s + "(");
         shouldChange = true;
     }
+    /**
+     * Hjálparfall við að bæta við aðferðum sem beita veldistákni.
+     * @param s innihald takkans sem ýtt var á. Annaðhvort x^y, x^2 eða 10^
+     * Eftir: við expression hefur bæst ^ ef s var x^y, ^2 ef s var á x^2 eða 10^ ef s var
+     * 10^. shouldChange nú stillt sem true.
+     */
     private void addPow(String s){
         if(s.contains("x")&&s.contains("y")){
             expression = expression.concat(s.substring(1,s.length()-1));
@@ -417,20 +552,38 @@ public class Calculator implements ActionListener{
         else expression = expression.concat("10^");
         shouldChange = true;
     }
+    /**
+     * Hjálparfall sem bætir lokunarsviga aftan við expression.
+     * shouldChange nú stillt sem true.
+     */
     private void rightApostrophe(){
         expression = expression.concat(")");
         shouldChange = true;
     }
+    /**
+     * Hjálparfall fyrir takka innan hisMemScrollPanel ef history er opið.
+     * @param expression er strengur sem lýsir reiknisegð sem á að skoða aftur.
+     * Birtir reiknisegðarhluta expression innan expressionArea og setur currentNum sem svarið
+     * við reiknisegðinni.
+     */
     private void historyPressed(String expression){
         expressionArea.setText(expression.substring(0, expression.indexOf("=")));
         currentNum = expression.substring(expression.indexOf("=")+1, expression.length());
         shouldChange = true;
         expression = "";
     }
+    /**
+     * Bætir fasta við reiknisegð
+     * @param constant er strengur sem lýsir fasta sem á að bæta við reiknisegð
+     * Ef shouldChange var true er expression nú fastinn. Ef shouldChange var false hefur constant
+     * bæst aftan við expression.
+     * shouldChange er nú true.
+     */
     private void addConstant(String constant){
-        expression = expression.concat(constant + " ");
+        if(shouldChange == true) expression = constant;
+        else expression = expression.concat(constant + " ");
         currentNum = constant;
-        shouldChange = false;
+        shouldChange = true;
     }
     /**
      * Hjálparfall við að meta hvort strengur lýsi heiltölu eða ekki.
@@ -459,7 +612,6 @@ public class Calculator implements ActionListener{
         catch(Exception exc){
             actionName = ((JRadioButton)(e.getSource())).getText();
         }
-        System.out.println(actionName);
         if(actionName.equals("⌫")) backspace();
         else if(actionName.equals("Standard")){
             standardCalculatorPanel();
