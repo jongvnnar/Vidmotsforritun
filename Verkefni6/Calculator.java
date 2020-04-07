@@ -206,19 +206,11 @@ public class Calculator implements ActionListener{
     }
     private void hisMemPanel(){
         hisMemPanel.removeAll();
-<<<<<<< HEAD
-        hisMemScroll.removeAll();
-
-        MigLayout layout = new MigLayout("fill, wrap 2", "grow, 60::", 
-        "[grow, 30:30:] [grow, 60::] [grow, 60::] [grow, 60::][grow, 20::][grow, 15::][grow, 15::]");
-        hisMemPanel.setLayout(layout);
-=======
         hisMemScrollPane.removeAll();
         this.isHistory = true;
         MigLayout hisMemLayout = new MigLayout("fill, wrap 2", "grow, 60::", 
         "[grow, 30:30:] [grow, 60::] [grow, 40::] [grow, 60::][grow, 20::][grow, 20::][grow, 20::]");
         hisMemPanel.setLayout(hisMemLayout);
->>>>>>> dev
         historyButton = makeButton("History");
         memoryButton = makeButton("Memory");
 
