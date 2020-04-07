@@ -8,21 +8,13 @@ import java.util.regex.*;
 public class Calculator implements ActionListener{
     private String currentNum = "0";
     private String expression = "";
-<<<<<<< HEAD
-    private LinkedHashMap<String, String> history = new LinkedHashMap<String, String>();
-=======
     private LinkedList<String> history = new LinkedList<String>();
->>>>>>> dev
     private LinkedHashMap<String, String> memory = new LinkedHashMap<String, String>();
     private JFrame frame = new JFrame("Calculator");
     private JPanel mainPanel = new JPanel();
     private JPanel calculatorPanel = new JPanel();
     private JPanel hisMemPanel = new JPanel();
-<<<<<<< HEAD
-    private JPanel hisMemScroll = new JPanel(new MigLayout("fillx, wrap 1", "grow","20:20:"));
-=======
     private JPanel hisMemScrollPane = new JPanel(new MigLayout("fillx, wrap 1", "grow","20:20:"));
->>>>>>> dev
     private JScrollPane scroller = new JScrollPane();
     private JLabel numLabel = new JLabel(currentNum);
     private JTextField expressionArea = new JTextField(expression);
@@ -32,40 +24,25 @@ public class Calculator implements ActionListener{
     private JButton memoryButton;
     private JTextField nameField = new JTextField();
     private JTextField valueField = new JTextField();
-<<<<<<< HEAD
-
-    public Calculator(){
-=======
     private int i = -1;
 
     public Calculator(){
         ImageIcon icon = new ImageIcon("./lightningIcon.png");
         frame.setIconImage(icon.getImage());
->>>>>>> dev
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         frame.setBackground(new Color(0,200,200));
         mainPanel.setLayout(new MigLayout("fill", "[grow] [] [grow]"));
         standardCalculatorPanel();
         mainPanel.add(calculatorPanel, "grow");
-<<<<<<< HEAD
-        mainPanel.add(new JSeparator(1), "pushy, growy");
-=======
         mainPanel.add(new JSeparator(SwingConstants.VERTICAL), "pushy, growy");
->>>>>>> dev
         hisMemPanel();
         mainPanel.add(hisMemPanel, "grow");
         frame.add(mainPanel);
         frame.pack();
         frame.setVisible(true);
-<<<<<<< HEAD
-        setupExpressionArea();
-    }
-    private void setupExpressionArea(){
-=======
         setupTextFields();
     }
     private void setupTextFields(){
->>>>>>> dev
         InputMap iM = expressionArea.getInputMap();
         ActionMap aM = expressionArea.getActionMap();
         iM.put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER,0), "enter");
@@ -82,21 +59,14 @@ public class Calculator implements ActionListener{
         aM.put("down", new AbstractAction(){
             @Override
             public void actionPerformed(ActionEvent e){
-<<<<<<< HEAD
-                System.out.println("Down pressed");
-=======
                 downPressed();
                 numLabel.setText(currentNum);
                 expressionArea.setText(expression);
->>>>>>> dev
             }
         });
         aM.put("up", new AbstractAction(){
             @Override
             public void actionPerformed(ActionEvent e){
-<<<<<<< HEAD
-                System.out.println("Up pressed");
-=======
                 upPressed();
                 numLabel.setText(currentNum);
                 expressionArea.setText(expression);
@@ -109,7 +79,6 @@ public class Calculator implements ActionListener{
             public void actionPerformed(ActionEvent e){
                 saveToMemory();
                 nameField.requestFocus();
->>>>>>> dev
             }
         });
     }
@@ -255,52 +224,15 @@ public class Calculator implements ActionListener{
 
         hisMemPanel.add(historyButton, "grow");
         hisMemPanel.add(memoryButton, "grow");
-<<<<<<< HEAD
-
-        for(Map.Entry<String,String> entry: history.entrySet()){
-            hisMemScroll.add(makeButton(entry.getKey() +"  " + entry.getValue()), "grow, span");
-        }
-
-        scroller.setViewportView(hisMemScroll);
-=======
         ListIterator i = history.listIterator();
         while(i.hasNext()){
             hisMemScrollPane.add(makeButton((String)i.next()), "grow, span");
         }
         scroller.setViewportView(hisMemScrollPane);
->>>>>>> dev
         historyButton.setBackground(new Color(255,99,71));
         hisMemPanel.add(scroller, "grow, span 2 6");
         hisMemPanel.revalidate();
     }
-<<<<<<< HEAD
-
-    private void memory(){
-        if(!isHistory) return;
-        memoryButton.setBackground(new Color(255,99,71));
-        historyButton.setBackground(Color.WHITE);
-        MigLayout memoryLayout = new MigLayout("fill, wrap 2", "grow, 60::", 
-        "[grow, 30:30:] [grow, 60::] [grow, 40::] [grow, 60::][grow, 20::][grow, 20::][grow, 20::]");
-        hisMemPanel.setLayout(memoryLayout);
-        hisMemPanel.remove(scroller);
-        hisMemScroll.removeAll();
-        Iterator i = memory.keySet().iterator();
-        for(Map.Entry<String,String> entry: memory.entrySet()){
-            hisMemScroll.add(makeButton(entry.getKey() +":  " + entry.getValue()), "grow, span");
-        }
-        scroller.setViewportView(hisMemScroll);
-        hisMemPanel.add(scroller, "grow, span 2 4");
-        JLabel label = new JLabel("Vista nýtt númer:");
-        label.setVerticalAlignment(SwingConstants.BOTTOM);
-        label.setFont(label.getFont().deriveFont(17.0f));
-        hisMemPanel.add(label, "grow, span");
-        hisMemPanel.add(new Label("Nafn"), "grow");
-        hisMemPanel.add(new Label("Gildi"), "grow");
-        hisMemPanel.add(nameField, "grow");
-        hisMemPanel.add(valueField, "grow");
-        hisMemPanel.add(makeButton("Vista"), "grow, span");
-        hisMemScroll.revalidate();
-=======
     private void upPressed(){
         if(i == history.size()-1) return;
         i++;
@@ -337,7 +269,6 @@ public class Calculator implements ActionListener{
         hisMemPanel.add(valueField, "grow");
         hisMemPanel.add(makeButton("Save"), "grow, span");
         hisMemScrollPane.revalidate();
->>>>>>> dev
         hisMemPanel.revalidate(); 
     }
 
@@ -358,16 +289,10 @@ public class Calculator implements ActionListener{
             return;
         }
         memory.put(name,value);
-<<<<<<< HEAD
-        hisMemScroll.add(makeButton(name + ": " + value), "grow, span");
-        nameField.setText("");
-        valueField.setText("");
-=======
         hisMemScrollPane.add(makeButton(name + ": " + value), "grow, span");
         nameField.setText("");
         valueField.setText("");
         hisMemScrollPane.revalidate();
->>>>>>> dev
         hisMemPanel.revalidate();
     }
     /**
@@ -471,11 +396,7 @@ public class Calculator implements ActionListener{
             errorMessage("Invalid Expression");
             return;
         }
-<<<<<<< HEAD
-        history.put(evalExpression, currentNum);
-=======
         history.addFirst(evalExpression + currentNum);
->>>>>>> dev
         hisMemPanel();
         expression = "";
     }
@@ -490,18 +411,6 @@ public class Calculator implements ActionListener{
 
     private void hrop(){
         expression = expression.concat("!");
-<<<<<<< HEAD
-    }
-    private void addFunc(String s){
-        expression = expression.concat(s + "(");
-    }
-    private void addPow(String s){
-        if(s.contains("x")&&s.contains("y")){
-            expression = expression.concat(currentNum + s.substring(1,s.length()-1));
-        }
-        else if(s.contains("x")) expression = expression.concat(currentNum + s.substring(1,s.length()));
-        else expression = expression.concat("10^");
-=======
         shouldChange = true;
     }
     private void addFunc(String s){
@@ -515,7 +424,6 @@ public class Calculator implements ActionListener{
         else if(s.contains("x")) expression = expression.concat(s.substring(1,s.length()));
         else expression = expression.concat("10^");
         shouldChange = true;
->>>>>>> dev
     }
     private void rightApostrophe(){
         expression = expression.concat(")");
@@ -528,11 +436,7 @@ public class Calculator implements ActionListener{
         expression = "";
     }
     private void addConstant(String constant){
-<<<<<<< HEAD
-        expression = expression.concat(constant);
-=======
         expression = expression.concat(constant + " ");
->>>>>>> dev
         currentNum = constant;
         shouldChange = false;
     }
@@ -555,10 +459,7 @@ public class Calculator implements ActionListener{
      * Uppfærir numLabel og uppfærir expressionArea ef ekki var ýtt á jafnaðarmerki.
      */
     public void actionPerformed(ActionEvent e){
-<<<<<<< HEAD
-=======
         i = 0;
->>>>>>> dev
         String actionName;
         try{
             actionName = ((JButton)(e.getSource())).getText();
@@ -580,18 +481,10 @@ public class Calculator implements ActionListener{
         }
         else if(actionName.equals("History")){
             hisMemPanel();
-<<<<<<< HEAD
-            this.isHistory = true;
-=======
->>>>>>> dev
             mainPanel.repaint();
         }
         else if(actionName.equals("Memory")){
             memory();
-<<<<<<< HEAD
-            this.isHistory = false;
-=======
->>>>>>> dev
             mainPanel.repaint();
         }
         else if(actionName.equals("Clear")) clear();
@@ -606,13 +499,8 @@ public class Calculator implements ActionListener{
         else if(actionName.equals("ln")) addFunc("ln");
         else if(actionName.equals("|x|")) addFunc("abs");
         else if(isNumber(actionName)) addNum(actionName);
-<<<<<<< HEAD
-        else if(actionName.equals("Vista")) saveToMemory();
-        else if(actionName.contains(":")) addConstant(actionName.substring(0,actionName.indexOf(":")-1));
-=======
         else if(actionName.equals("Save")) saveToMemory();
         else if(actionName.contains(":")) addConstant(actionName.substring(0,actionName.indexOf(":")));
->>>>>>> dev
         else if(actionName.equals("e")||actionName.equals("π")) addConstant(actionName);
         else addOp(actionName);
         numLabel.setText(currentNum);
