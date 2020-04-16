@@ -78,7 +78,7 @@ public class Calculator implements ActionListener{
     private JPanel mainPanel = new JPanel();
     private JPanel calculatorPanel = new JPanel();
     private JPanel hisMemPanel = new JPanel();
-    private JPanel hisMemScrollPanel = new JPanel(new MigLayout("fillx, wrap 1", "grow","20:20:"));
+    private JPanel hisMemScrollPanel = new JPanel(new MigLayout("fillx, wrap 2", "grow","20:20:"));
     private JScrollPane scroller = new JScrollPane();
     private JLabel numLabel = new JLabel(currentNum);
     private JTextField expressionArea = new JTextField(expression);
@@ -320,10 +320,20 @@ public class Calculator implements ActionListener{
         hisMemPanel.add(historyButton, "grow");
         hisMemPanel.add(memoryButton, "grow");
         if(history.isEmpty()) hisMemScrollPanel.add(new JLabel("No history"));
+        else{
+            hisMemScrollPanel.add(new JLabel("Expressions"), "grow");
+            hisMemScrollPanel.add(new JLabel("Answers"), "grow");
+            hisMemScrollPanel.add(new JSeparator(SwingConstants.HORIZONTAL), "pushx, growx, span");
+        }
         ListIterator i = history.listIterator();
         while(i.hasNext()){
             String s = (String)i.next();
-            hisMemScrollPanel.add(makeButton(s),"grow, span");
+            JButton exp = makeButton(s.substring(0,s.indexOf("=")-1).trim());
+            exp.setToolTipText("Add old expression to current one");
+            JButton num = makeButton(s.substring(s.indexOf("=")+1, s.length()).trim());
+            num.setToolTipText("Add old answer to current expression");
+            hisMemScrollPanel.add(exp,"grow");
+            hisMemScrollPanel.add(num,"grow");
         }
         scroller.setViewportView(hisMemScrollPanel);
         historyButton.setBackground(new Color(255,99,71));
