@@ -567,10 +567,10 @@ public class Calculator implements ActionListener{
      * við reiknisegðinni.
      */
     private void historyPressed(String expression){
-        expressionArea.setText(expression.substring(0, expression.indexOf("=")));
+        this.expression = expression.substring(0, expression.indexOf("=")-1);
         currentNum = expression.substring(expression.indexOf("=")+1, expression.length());
         shouldChange = true;
-        expression = "";
+        // expression = "";
     }
     /**
      * Bætir fasta við reiknisegð
@@ -580,8 +580,7 @@ public class Calculator implements ActionListener{
      * shouldChange er nú true.
      */
     private void addConstant(String constant){
-        if(shouldChange == true) expression = constant;
-        else expression = expression.concat(constant + " ");
+        expression = expression.concat(constant + " ");
         currentNum = constant;
         shouldChange = true;
     }
@@ -648,7 +647,7 @@ public class Calculator implements ActionListener{
         else if(actionName.equals("e")||actionName.equals("π")) addConstant(actionName);
         else addOp(actionName);
         numLabel.setText(currentNum);
-        if(!actionName.contains("="))
+        if(!actionName.equals("="))
             expressionArea.setText(expression);
     }
     public static void main(String[] args){
