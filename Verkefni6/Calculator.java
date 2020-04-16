@@ -319,9 +319,11 @@ public class Calculator implements ActionListener{
 
         hisMemPanel.add(historyButton, "grow");
         hisMemPanel.add(memoryButton, "grow");
+        if(history.isEmpty()) hisMemScrollPanel.add(new JLabel("No history"));
         ListIterator i = history.listIterator();
         while(i.hasNext()){
-            hisMemScrollPanel.add(makeButton((String)i.next()), "grow, span");
+            String s = (String)i.next();
+            hisMemScrollPanel.add(makeButton(s),"grow, span");
         }
         scroller.setViewportView(hisMemScrollPanel);
         historyButton.setBackground(new Color(255,99,71));
